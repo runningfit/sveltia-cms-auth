@@ -1,0 +1,64 @@
+# Rockfall
+
+A browser remake of _Rockfall_, the 1991 Acorn Archimedes cave game by Eterna — one of the many descendants of Boulder Dash that appeared on 8 and 16 bit machines. You dig through the earth, collect the gems, dodge the rocks you dislodge, and get out through the exit before the clock runs down.
+
+It runs from a plain folder of static files with no build step and no dependencies, and it is meant to be played with a thumb as happily as with a keyboard.
+
+## Playing it
+
+Open `index.html` in a browser, or serve the folder:
+
+```sh
+npx http-server game -p 8080   # then open http://localhost:8080
+```
+
+| Action       | Keyboard           | Touch                         |
+| ------------ | ------------------ | ----------------------------- |
+| Dig and move | Arrow keys or WASD | The pad, or swipe on the cave |
+| Drop a bomb  | Space              | The ● key                     |
+| Pause        | P or Esc           | The ▮▮ button                 |
+| Sound on/off | M                  | The ♫ button                  |
+| Restart cave | R (costs a miner)  | —                             |
+
+The swipe control is a relative stick: press anywhere on the cave, drag in the direction you want, and the miner keeps going until you let go.
+
+## Rules of the cave
+
+- **Gems** open the exit once you have the quota shown in the status bar. Gems collected after the quota are worth double.
+- **Rocks and gems fall** when the earth beneath them is dug away, and they roll off the top of other rocks, gems and brick. Anything falling on your head kills you — once a rock is falling you cannot outrun it.
+- **Rocks push** sideways into empty space, so a wall of rock can be shifted one cell at a time.
+- **Monsters** wander the open caves at random. Drop a rock on one and it bursts into gems; touch one and you both go up.
+- **Pulsators** follow the cave walls rather than wandering, and are worth nothing — trap them or stay out of their way.
+- **Bombs** are picked up by walking over them and dropped in front of you with Space. The fuse is about two seconds and the blast clears a three by three hole through earth, brick, rock and anything alive in it, including you.
+- **Steel walls** survive everything. Brick does not.
+- **The clock** kills you when it reaches zero; whatever is left on it when you escape is worth 5 points a second.
+
+An extra miner arrives every 5000 points. The best score of the session is kept in local storage.
+
+Caves A and B are hand drawn to teach digging and rock pushing. Everything after that is generated from a seed derived from the cave number, so cave G is always the same cave G, and the caves never run out. Each generated cave is flood filled before it is handed over, to prove the gem quota and the exit can actually be reached; in the rare case a cave seals its own exit off, a corridor is dug to it.
+
+## Layout
+
+| Path            | What it holds                                                     |
+| --------------- | ----------------------------------------------------------------- |
+| `index.html`    | The page, the status bar, the panels and the touch controls       |
+| `css/style.css` | Cabinet styling, responsive layout, the on screen pad             |
+| `js/art.js`     | The palette and every sprite, drawn on a 16×16 pixel grid in code |
+| `js/audio.js`   | Web Audio sound effects, generated at runtime                     |
+| `js/levels.js`  | The hand drawn caves and the seeded cave generator                |
+| `js/engine.js`  | The cave simulation: gravity, creatures, bombs, explosions        |
+| `js/input.js`   | Keyboard, the on screen pad and the thumb stick                   |
+| `js/game.js`    | Render loop, scrolling viewport, score, lives and panels          |
+| `sprites.html`  | A development page that renders every sprite frame at 64 pixels   |
+| `tests/`        | Node tests that run the simulation headlessly                     |
+
+There is no bundler on purpose: the scripts are plain classic scripts sharing a `window.Rockfall` namespace, so the game also runs straight off the filesystem.
+
+## Tests
+
+```sh
+node game/tests/rules.test.cjs   # gravity, digging, pushing, bombs, deaths
+node game/tests/caves.test.cjs   # every cave has a reachable quota and exit, plus a bot play through
+```
+
+Both are plain Node scripts that load the game modules into a sandbox with a stub `window`, so they need nothing installed.
