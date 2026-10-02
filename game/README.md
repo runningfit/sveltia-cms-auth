@@ -6,11 +6,28 @@ It runs from a plain folder of static files with no build step and no dependenci
 
 ## Playing it
 
-Open `index.html` in a browser, or serve the folder:
+Once GitHub Pages is switched on for this repository (Settings → Pages → Source: **GitHub Actions**), every push to `main` that touches `game/` publishes the game to:
+
+**https://runningfit.github.io/sveltia-cms-auth/**
+
+The deploy runs the tests below first and publishes only the playable files, not the tests or these notes. You can also run the "Deploy Rockfall to GitHub Pages" workflow by hand from the Actions tab.
+
+To play locally, open `index.html` in a browser or serve the folder:
 
 ```sh
 npx http-server game -p 8080   # then open http://localhost:8080
 ```
+
+### On your phone
+
+The game installs to the home screen and runs full screen, and once it has been opened online it plays with no connection at all.
+
+- **Android (Chrome):** tap the ⤓ button in the status bar, or Chrome's menu → _Add to home screen_.
+- **iPhone (Safari):** tap Share → _Add to Home Screen_. Safari has no install prompt, so the ⤓ button does not appear there.
+
+Updates arrive by themselves: the game always starts from its offline copy and fetches any new version in the background, so a new release is picked up the first time the game is opened after it goes live and shows from the launch after that.
+
+### Controls
 
 | Action       | Keyboard           | Touch                         |
 | ------------ | ------------------ | ----------------------------- |
@@ -39,26 +56,32 @@ Caves A and B are hand drawn to teach digging and rock pushing. Everything after
 
 ## Layout
 
-| Path            | What it holds                                                     |
-| --------------- | ----------------------------------------------------------------- |
-| `index.html`    | The page, the status bar, the panels and the touch controls       |
-| `css/style.css` | Cabinet styling, responsive layout, the on screen pad             |
-| `js/art.js`     | The palette and every sprite, drawn on a 16×16 pixel grid in code |
-| `js/audio.js`   | Web Audio sound effects, generated at runtime                     |
-| `js/levels.js`  | The hand drawn caves and the seeded cave generator                |
-| `js/engine.js`  | The cave simulation: gravity, creatures, bombs, explosions        |
-| `js/input.js`   | Keyboard, the on screen pad and the thumb stick                   |
-| `js/game.js`    | Render loop, scrolling viewport, score, lives and panels          |
-| `sprites.html`  | A development page that renders every sprite frame at 64 pixels   |
-| `tests/`        | Node tests that run the simulation headlessly                     |
+| Path                   | What it holds                                                     |
+| ---------------------- | ----------------------------------------------------------------- |
+| `index.html`           | The page, the status bar, the panels and the touch controls       |
+| `manifest.webmanifest` | App name, colors and icons for installing to the home screen      |
+| `sw.js`                | Service worker that caches the game for offline play              |
+| `icons/`               | Home screen icons, rendered from the game's own gem sprite        |
+| `css/style.css`        | Cabinet styling, responsive layout, the on screen pad             |
+| `js/art.js`            | The palette and every sprite, drawn on a 16×16 pixel grid in code |
+| `js/audio.js`          | Web Audio sound effects, generated at runtime                     |
+| `js/levels.js`         | The hand drawn caves and the seeded cave generator                |
+| `js/engine.js`         | The cave simulation: gravity, creatures, bombs, explosions        |
+| `js/input.js`          | Keyboard, the on screen pad and the thumb stick                   |
+| `js/game.js`           | Render loop, scrolling viewport, score, lives and panels          |
+| `sprites.html`         | A development page that renders every sprite frame at 64 pixels   |
+| `tests/`               | Node tests that run the simulation headlessly                     |
 
-There is no bundler on purpose: the scripts are plain classic scripts sharing a `window.Rockfall` namespace, so the game also runs straight off the filesystem.
+There is no bundler on purpose: the scripts are plain classic scripts sharing a `window.Rockfall` namespace, so the game also runs straight off the filesystem (without offline support, which needs a web server).
+
+If you add a file the game loads, add it to the `SHELL` list in `sw.js` too; `pwa.test.cjs` fails until you do, because a single missing file stops the offline copy from installing.
 
 ## Tests
 
 ```sh
 node game/tests/rules.test.cjs   # gravity, digging, pushing, bombs, deaths
 node game/tests/caves.test.cjs   # every cave has a reachable quota and exit, plus a bot play through
+node game/tests/pwa.test.cjs     # the offline cache, the page and the manifest agree with the files
 ```
 
-Both are plain Node scripts that load the game modules into a sandbox with a stub `window`, so they need nothing installed.
+All three are plain Node scripts that load the game modules into a sandbox with a stub `window`, so they need nothing installed.

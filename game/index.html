@@ -14,7 +14,10 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Rockfall" />
     <title>Rockfall</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="css/style.css" />
     <link
       rel="icon"
@@ -49,6 +52,16 @@
           <span class="hud-value" id="hud-bombs">0</span>
         </div>
         <div class="hud-buttons">
+          <button
+            type="button"
+            class="icon-button"
+            id="btn-install"
+            aria-label="Install Rockfall"
+            title="Install Rockfall"
+            hidden
+          >
+            &#10515;
+          </button>
           <button type="button" class="icon-button" id="btn-sound" aria-label="Toggle sound">
             &#9835;
           </button>
