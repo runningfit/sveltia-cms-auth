@@ -148,61 +148,64 @@ window.Rockfall = window.Rockfall || {};
     put(grid, sx, sy + 1, '8');
   };
 
-  /** Player sprite frames, drawn as a helmeted miner. */
-  const MINER = [
+  /**
+   * Player sprite frames: a slim spaceman in a red suit, drawn in profile facing right (the
+   * renderer mirrors him when he walks left). Standing, then the two halves of a stride.
+   */
+  const SPACEMAN = [
     fromRows([
       '................',
-      '.....hhhhhh.....',
-      '....hhhhhhhh....',
-      '...hhhhhhhhhh...',
-      '...bbhhhhhhhh...',
-      '....44444444....',
-      '....04444440....',
-      '....44444444....',
-      '.....444444.....',
-      '...aaaaaaaaaa...',
-      '..aaaa4444aaaa..',
-      '..aa4aaaaaa4aa..',
-      '...aaaaaaaaaa...',
-      '...aa......aa...',
-      '...11......11...',
-      '..1111....1111..',
+      '......eeee......',
+      '.....efgffe.....',
+      '....efff99be....',
+      '....eff99a8e....',
+      '....efff999e....',
+      '.....effffe.....',
+      '......6776......',
+      '....56fffff.....',
+      '....56fhfff.....',
+      '....56ffffe.....',
+      '....55effe7.....',
+      '......efff......',
+      '......eeff......',
+      '......eeff......',
+      '.....666777.....',
     ]),
     fromRows([
       '................',
-      '.....hhhhhh.....',
-      '....hhhhhhhh....',
-      '...hhhhhhhhhh...',
-      '...bbhhhhhhhh...',
-      '....44444444....',
-      '....04444440....',
-      '....44444444....',
-      '.....444444.....',
-      '...aaaaaaaaaa...',
-      '..aaaa4444aaaa..',
-      '..aa4aaaaaa4aa..',
-      '...aaaaaaaaaa...',
-      '....aa....aa....',
-      '....11....11....',
-      '...1111..1111...',
+      '......eeee......',
+      '.....efgffe.....',
+      '....efff99be....',
+      '....eff99a8e....',
+      '....efff999e....',
+      '.....effffe.....',
+      '......6776......',
+      '....56fffff.....',
+      '....56fhfff.....',
+      '....56ffffe.....',
+      '....55effe7.....',
+      '......efff......',
+      '.....ee..ff.....',
+      '....ee....ff....',
+      '...666....777...',
     ]),
     fromRows([
       '................',
-      '.....hhhhhh.....',
-      '....hhhhhhhh....',
-      '...hhhhhhhhhh...',
-      '...bbhhhhhhhh...',
-      '....44444444....',
-      '....04444440....',
-      '....44444444....',
-      '.....444444.....',
-      '...aaaaaaaaaa...',
-      '..aaaa4444aaaa..',
-      '..aa4aaaaaa4aa..',
-      '...aaaaaaaaaa...',
-      '..aa........aa..',
-      '..11........11..',
-      '.1111......1111.',
+      '......eeee......',
+      '.....efgffe.....',
+      '....efff99be....',
+      '....eff99a8e....',
+      '....efff999e....',
+      '.....effffe.....',
+      '......6776......',
+      '....56fffff.....',
+      '....56fhfff.....',
+      '....56ffffe.....',
+      '....55effe7.....',
+      '......efff......',
+      '.....ff..ee.....',
+      '....ff....ee....',
+      '...777....666...',
     ]),
   ];
 
@@ -498,11 +501,11 @@ window.Rockfall = window.Rockfall || {};
   };
 
   /**
-   * Pick a miner frame.
+   * Pick a spaceman frame.
    * @param {number} frame - Animation frame.
    * @returns {string[][]} The pixel grid.
    */
-  const minerGrid = (frame) => MINER[frame];
+  const spacemanGrid = (frame) => SPACEMAN[frame];
   /**
    * Paint a bomb waiting to be picked up.
    * @param {number} frame - Animation frame.
@@ -543,7 +546,7 @@ window.Rockfall = window.Rockfall || {};
     brick: { frames: 1, paint: brickGrid },
     boulder: { frames: 1, paint: boulderGrid },
     gem: { frames: 4, paint: gemGrid },
-    player: { frames: 3, paint: minerGrid },
+    player: { frames: 3, paint: spacemanGrid },
     monster: { frames: 2, paint: monsterGrid },
     pulsator: { frames: 2, paint: pulsatorGrid },
     bomb: { frames: 2, paint: bombIdleGrid },

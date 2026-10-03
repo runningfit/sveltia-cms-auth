@@ -79,11 +79,28 @@
             <h1 class="panel-title" id="panel-title">ROCKFALL</h1>
             <p class="panel-text" id="panel-text"></p>
             <div class="panel-keys" id="panel-keys"></div>
+            <div
+              class="segmented"
+              id="panel-controls"
+              role="radiogroup"
+              aria-label="Touch controls"
+              hidden
+            >
+              <button type="button" role="radio" data-mode="stick" aria-checked="true">
+                Joystick
+              </button>
+              <button type="button" role="radio" data-mode="pad" aria-checked="false">D-pad</button>
+            </div>
             <button type="button" class="big-button" id="panel-button">START</button>
           </div>
         </div>
 
         <div class="touch-layer" id="touch-layer" hidden>
+          <div class="joystick" id="joystick" aria-hidden="true">
+            <div class="joystick-base">
+              <div class="joystick-knob"></div>
+            </div>
+          </div>
           <div class="dpad" id="dpad">
             <button type="button" class="dpad-key up" data-dir="up" aria-label="Up"></button>
             <button type="button" class="dpad-key left" data-dir="left" aria-label="Left"></button>
@@ -108,7 +125,7 @@
           >Arrows / WASD move &middot; Space drops a bomb &middot; P pause &middot; R restart
           cave</span
         >
-        <span class="tip-touch">Swipe or use the pad &middot; Tap &#9679; to drop a bomb</span>
+        <span class="tip-touch">Stick or swipe to steer &middot; Double tap for a bomb</span>
       </footer>
     </div>
 
