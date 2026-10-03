@@ -1,0 +1,52 @@
+# Publishes the Rockfall game in game/ to GitHub Pages. Only the game is deployed; the auth
+# worker in src/ is deployed separately by Cloudflare and is not affected by this workflow.
+name: Deploy Rockfall to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'game/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deployment finish rather than cancelling it half way through.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test the game
+        run: |
+          node game/tests/rules.test.cjs
+          node game/tests/caves.test.cjs
+          node game/tests/pwa.test.cjs
+
+      - name: Stage the site
+        # Ship the playable game only, without its tests, notes or the sprite preview page.
+        run: |
+          mkdir _site
+          cp -r game/. _site/
+          rm -rf _site/tests _site/README.md _site/sprites.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

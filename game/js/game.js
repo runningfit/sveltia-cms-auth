@@ -106,6 +106,7 @@
       this.completeTimer = 0;
 
       this.bindButtons();
+      this.bindInstall();
       this.detectTouch();
       this.resize();
 
@@ -133,6 +134,40 @@
       this.panelButton.addEventListener('click', () => {
         this.sfx.unlock();
         this.action('confirm');
+      });
+    }
+
+    /**
+     * Offer an install button where the browser supports installing the game as an app. Browsers
+     * that install from their own menu instead (Safari) never fire the event, so the button stays
+     * hidden there.
+     */
+    bindInstall() {
+      const button = document.getElementById('btn-install');
+      let offer = null;
+
+      window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        offer = event;
+        button.hidden = false;
+      });
+
+      button.addEventListener('click', async () => {
+        if (!offer) {
+          return;
+        }
+
+        const pending = offer;
+
+        offer = null;
+        button.hidden = true;
+        pending.prompt();
+        await pending.userChoice;
+      });
+
+      window.addEventListener('appinstalled', () => {
+        offer = null;
+        button.hidden = true;
       });
     }
 
@@ -708,4 +743,12 @@
   window.addEventListener('DOMContentLoaded', () => {
     NS.game = new Game();
   });
+
+  // The service worker makes the game playable offline and installable. Pages opened straight
+  // from disk cannot register one, and the game runs fine without it.
+  if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
 })(window.Rockfall);

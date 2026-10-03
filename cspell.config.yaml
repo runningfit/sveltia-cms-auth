@@ -15,7 +15,9 @@ useGitignore: true
 ignorePaths:
   - pnpm-lock.yaml
 words:
+  - appinstalled
   - Archimedes
+  - beforeinstallprompt
   - cooldown
   - CVEs
   - Decap
