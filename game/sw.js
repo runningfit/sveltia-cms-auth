@@ -1,13 +1,21 @@
 /**
  * Service worker for Rockfall.
  *
- * Caches the whole game on first visit so it starts and plays with no connection, which is also
- * what lets phones install it to the home screen. Requests are answered from the cache straight
- * away while a fresh copy is fetched in the background, so a new release shows up on the next
- * launch without anyone having to bump a version number.
+ * Caches the whole game so it starts and plays with no connection, which is also what lets phones
+ * install it to the home screen.
+ *
+ * Updates are all or nothing. The game's files depend on each other, so a phone must never run a
+ * mix of two releases. Each release gets its own cache, named after the release, and is downloaded
+ * complete (straight from the server, skipping the browser's own short-term cache) before it is
+ * used. Until then the previous release keeps running untouched.
  */
 const sw = globalThis;
-const CACHE = 'rockfall-v1';
+/**
+ * The release this worker serves. The deploy replaces `dev` with the commit being published, so
+ * every release changes this file, which is what tells phones there is a new version to fetch.
+ */
+const VERSION = 'dev';
+const CACHE = `rockfall-${VERSION}`;
 
 /** Everything the game needs to boot offline. A missing file here fails the whole install. */
 const SHELL = [
@@ -31,7 +39,7 @@ sw.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(SHELL))
+      .then((cache) => cache.addAll(SHELL.map((path) => new Request(path, { cache: 'reload' }))))
       .then(() => sw.skipWaiting()),
   );
 });
@@ -41,7 +49,11 @@ sw.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))),
+        Promise.all(
+          keys
+            .filter((key) => key.startsWith('rockfall-') && key !== CACHE)
+            .map((key) => caches.delete(key)),
+        ),
       )
       .then(() => sw.clients.claim()),
   );
@@ -58,32 +70,19 @@ sw.addEventListener('fetch', (event) => {
     caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(request, { ignoreSearch: true });
 
-      const fresh = fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            cache.put(request, response.clone());
-          }
-
-          return response;
-        })
-        .catch(async () => {
-          if (cached) {
-            return cached;
-          }
-
-          // Offline with nothing cached for this exact URL: a page load still gets the game.
-          return request.mode === 'navigate'
-            ? (await cache.match('index.html')) || Response.error()
-            : Response.error();
-        });
-
       if (cached) {
-        event.waitUntil(fresh);
-
         return cached;
       }
 
-      return fresh;
+      // Anything outside the release, or a page load at an unexpected address: go to the
+      // network, and fall back to the game itself when offline.
+      try {
+        return await fetch(request);
+      } catch {
+        const page = request.mode === 'navigate' ? await cache.match('index.html') : null;
+
+        return page || Response.error();
+      }
     }),
   );
 });

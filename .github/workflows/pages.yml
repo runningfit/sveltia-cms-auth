@@ -41,6 +41,10 @@ jobs:
           mkdir _site
           cp -r game/. _site/
           rm -rf _site/tests _site/README.md _site/sprites.html
+          # Stamp the release into the service worker so phones see a new version and fetch the
+          # whole release at once. Fail the deploy if the stamp did not land.
+          sed -i "s/^const VERSION = 'dev';$/const VERSION = '${GITHUB_SHA}';/" _site/sw.js
+          grep -q "^const VERSION = '${GITHUB_SHA}';$" _site/sw.js
 
       - uses: actions/configure-pages@v5
 
