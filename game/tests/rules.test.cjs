@@ -83,6 +83,32 @@ check('gem collected', runTest.gems === 1 && runTest.exitOpen, `gems=${runTest.g
 runTest.tick({ dx: 1, dy: 0, bomb: false }, TICK);
 check('exit completes the cave', runTest.won);
 
+// --- Cuts reported for the cutter animation -------------------------------
+const cutTest = new Engine.Cave({
+  name: 'T',
+  gemsNeeded: 1,
+  time: 100,
+  map: ['WWWWWWWW', 'W.P.* XW', 'WWWWWWWW'],
+});
+cutTest.tick({ dx: 1, dy: 0, bomb: false }, TICK);
+check(
+  'digging dirt reports a dirt cut at that cell',
+  JSON.stringify(cutTest.cuts) === JSON.stringify([{ kind: 'dirt', x: 3, y: 1, dx: 1, dy: 0 }]),
+  JSON.stringify(cutTest.cuts),
+);
+cutTest.tick({ dx: 1, dy: 0, bomb: false }, TICK);
+check(
+  'taking a gem reports a gem cut',
+  cutTest.cuts.length === 1 && cutTest.cuts[0].kind === 'gem' && cutTest.cuts[0].x === 4,
+  JSON.stringify(cutTest.cuts),
+);
+cutTest.tick({ dx: 1, dy: 0, bomb: false }, TICK);
+check(
+  'walking through open cave reports no cut',
+  cutTest.cuts.length === 0,
+  JSON.stringify(cutTest.cuts),
+);
+
 // --- Pushing ---------------------------------------------------------------
 const pushTest = new Engine.Cave({
   name: 'T',

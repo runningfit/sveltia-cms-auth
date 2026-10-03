@@ -6,7 +6,7 @@
  * @param {object} NS - The Rockfall namespace holding the other modules.
  */
 (function initGame(NS) {
-  const { Art, Engine, Levels, Sfx, Controls } = NS;
+  const { Art, Engine, Fx, Levels, Sfx, Controls } = NS;
   const { TILE, FLAG, BOOM_STAGES } = Engine;
   /** Length of one logic tick in seconds. */
   const TICK = 0.125;
@@ -82,6 +82,7 @@
 
       this.bombButton = document.getElementById('btn-bomb');
       this.art = new Art.SpriteSheet();
+      this.fx = new Fx.CutterFx(TICK);
       this.sfx = new Sfx();
       this.controlPicker = document.getElementById('panel-controls');
       this.controls = new Controls({
@@ -339,6 +340,7 @@
      */
     loadCave() {
       this.cave = new Engine.Cave(Levels.levelFor(this.level));
+      this.fx.clear();
       this.camera = { x: 0, y: 0 };
       this.accumulator = 0;
       this.controls.discardBomb();
@@ -554,6 +556,7 @@
 
       this.cave.tick(intent, TICK);
       this.cave.events.forEach((event) => this.sfx.play(event));
+      this.cave.cuts.forEach((cut) => this.fx.cut(cut));
 
       if (this.cave.timeLeft < 15 && this.cave.alive) {
         this.timerBeep += TICK;
@@ -668,8 +671,9 @@
 
     /**
      * Draw the cave.
+     * @param {number} dt - Seconds since the last frame, for the cutter animation.
      */
-    render() {
+    render(dt) {
       const { ctx, cave, tileSize } = this;
 
       ctx.fillStyle = '#0a0a11';
@@ -698,6 +702,10 @@
         Math.ceil(this.camera.y + this.canvas.height / tileSize),
       );
 
+      this.fx.drawUnder(ctx, { originX, originY, tileSize }, this.art);
+
+      let playerAt = { x: cave.playerX, y: cave.playerY };
+
       for (let y = firstRow; y <= lastRow; y += 1) {
         for (let x = firstCol; x <= lastCol; x += 1) {
           const index = cave.at(x, y);
@@ -709,6 +717,10 @@
             const px = Math.round(originX + (x + (move ? move.dx * slide : 0)) * tileSize);
             const py = Math.round(originY + (y + (move ? move.dy * slide : 0)) * tileSize);
             const bitmap = this.art.get(sprite.name, sprite.frame);
+
+            if (sprite.name === 'player') {
+              playerAt = { x: (px - originX) / tileSize, y: (py - originY) / tileSize };
+            }
 
             if (sprite.name === 'player' && cave.facing < 0) {
               ctx.save();
@@ -722,6 +734,13 @@
           }
         }
       }
+
+      // The cutter sits at his chest on the side he faces, which is where the beam starts and
+      // where the cut material is pulled in.
+      const nozzle = { x: playerAt.x + 0.5 + 0.3 * cave.facing, y: playerAt.y + 0.6 };
+
+      this.fx.update(this.state === 'playing' ? dt : 0, nozzle);
+      this.fx.drawOver(ctx, { originX, originY, tileSize }, nozzle);
     }
 
     /**
@@ -757,7 +776,7 @@
 
       this.lastFrame = time;
       this.update(dt);
-      this.render();
+      this.render(dt);
       this.updateHud();
 
       window.requestAnimationFrame((next) => this.frame(next));
