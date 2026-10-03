@@ -20,28 +20,28 @@
   const MIN_ROWS = 9;
 
   /**
-   * Read a number from local storage, tolerating browsers that refuse access.
+   * Read a setting from local storage, tolerating browsers that refuse access.
    * @param {string} key - Storage key.
-   * @returns {number} The stored number, or zero.
+   * @returns {string|null} The stored value, or null.
    */
-  const loadNumber = (key) => {
+  const loadSetting = (key) => {
     try {
-      return Number(window.localStorage.getItem(key)) || 0;
+      return window.localStorage.getItem(key);
     } catch {
-      return 0;
+      return null;
     }
   };
 
   /**
-   * Write a number to local storage, tolerating browsers that refuse access.
+   * Write a setting to local storage, tolerating browsers that refuse access.
    * @param {string} key - Storage key.
-   * @param {number} value - Value to store.
+   * @param {string|number} value - Value to store.
    */
-  const saveNumber = (key, value) => {
+  const saveSetting = (key, value) => {
     try {
       window.localStorage.setItem(key, String(value));
     } catch {
-      // Private browsing modes can throw here; a lost high score is not worth a crash.
+      // Private browsing modes can throw here; a lost setting is not worth a crash.
     }
   };
 
@@ -83,9 +83,11 @@
       this.bombButton = document.getElementById('btn-bomb');
       this.art = new Art.SpriteSheet();
       this.sfx = new Sfx();
+      this.controlPicker = document.getElementById('panel-controls');
       this.controls = new Controls({
         surface: this.canvas,
         dpad: document.getElementById('dpad'),
+        joystick: document.getElementById('joystick'),
         bombButton: this.bombButton,
         onAction: this.action.bind(this),
       });
@@ -95,7 +97,7 @@
       this.lives = 3;
       this.score = 0;
       this.nextLife = EXTRA_LIFE;
-      this.highScore = loadNumber('rockfall.highScore');
+      this.highScore = Number(loadSetting('rockfall.highScore')) || 0;
       this.cave = null;
       this.accumulator = 0;
       this.lastFrame = 0;
@@ -105,6 +107,7 @@
       this.introTimer = 0;
       this.completeTimer = 0;
 
+      this.setTouchMode(loadSetting('rockfall.controls') === 'pad' ? 'pad' : 'stick');
       this.bindButtons();
       this.bindInstall();
       this.detectTouch();
@@ -134,6 +137,25 @@
       this.panelButton.addEventListener('click', () => {
         this.sfx.unlock();
         this.action('confirm');
+      });
+      this.controlPicker.querySelectorAll('[data-mode]').forEach((choice) => {
+        choice.addEventListener('click', () => {
+          this.setTouchMode(choice.dataset.mode);
+          saveSetting('rockfall.controls', choice.dataset.mode);
+        });
+      });
+    }
+
+    /**
+     * Switch the on screen controls between the thumb joystick and the d-pad.
+     * @param {string} mode - Either `stick` or `pad`.
+     */
+    setTouchMode(mode) {
+      this.touchMode = mode;
+      document.body.dataset.controls = mode;
+      this.controls.releaseTouch();
+      this.controlPicker.querySelectorAll('[data-mode]').forEach((choice) => {
+        choice.setAttribute('aria-checked', String(choice.dataset.mode === mode));
       });
     }
 
@@ -191,6 +213,7 @@
       }
 
       this.touchLayer.hidden = false;
+      this.controlPicker.hidden = false;
       document.body.classList.add('touch');
       this.resize();
     }
@@ -291,7 +314,7 @@
           'clock beats you. Rocks fall when you dig under them, and they crush monsters ' +
           'and miners alike.',
         keys: [
-          'Arrows, WASD or a swipe to dig',
+          'Arrows, WASD or the thumb stick to dig',
           'Space or ● to drop a bomb',
           'Push rocks sideways to clear a path',
           this.highScore ? `Best score ${pad(this.highScore, 6)}` : '',
@@ -413,7 +436,7 @@
     saveHighScore() {
       if (this.score > this.highScore) {
         this.highScore = this.score;
-        saveNumber('rockfall.highScore', this.highScore);
+        saveSetting('rockfall.highScore', this.highScore);
       }
     }
 

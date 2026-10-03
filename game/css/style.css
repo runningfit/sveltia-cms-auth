@@ -197,6 +197,46 @@ body.touch .stage {
   font-size: clamp(11px, 3vw, 13px);
 }
 
+.segmented {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 4px;
+  background: #0d0d16;
+  border: 2px solid var(--edge);
+  border-radius: 8px;
+}
+
+.segmented[hidden] {
+  display: none;
+}
+
+.segmented button {
+  flex: 1;
+  padding: 10px 8px;
+  color: var(--dim);
+  font-family: var(--font);
+  font-size: clamp(12px, 3.4vw, 14px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.segmented button[aria-checked='true'] {
+  color: #05050a;
+  background: var(--gem);
+}
+
+.segmented button:focus-visible,
+.big-button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
 .big-button {
   width: 100%;
   padding: 14px 18px;
@@ -235,16 +275,16 @@ body.touch .stage {
 
 .dpad {
   position: relative;
-  width: 132px;
-  height: 132px;
+  width: 150px;
+  height: 150px;
   pointer-events: auto;
   touch-action: none;
 }
 
 .dpad-key {
   position: absolute;
-  width: 44px;
-  height: 44px;
+  width: 50px;
+  height: 50px;
   padding: 0;
   background: rgb(35 35 58 / 72%);
   border: 2px solid rgb(120 120 160 / 55%);
@@ -263,13 +303,63 @@ body.touch .stage {
   content: '';
 }
 
-.dpad-key:active {
+.dpad-key {
+  pointer-events: none;
+}
+
+.dpad-key.active {
   background: rgb(90 90 140 / 85%);
+  border-color: rgb(247 220 78 / 80%);
+}
+
+/* Joystick ---------------------------------------------------------------- */
+
+.joystick {
+  position: relative;
+  width: min(58vw, 240px);
+  height: 150px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.joystick-base {
+  position: absolute;
+  bottom: 8px;
+  left: 10px;
+  width: 128px;
+  height: 128px;
+  background: radial-gradient(circle, rgb(60 60 95 / 60%), rgb(35 35 58 / 55%));
+  border: 2px solid rgb(120 120 160 / 55%);
+  border-radius: 50%;
+  transform: translate(var(--bx, 0px), var(--by, 0px));
+}
+
+.joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60px;
+  height: 60px;
+  margin: -30px 0 0 -30px;
+  background: rgb(150 150 200 / 75%);
+  border: 2px solid rgb(220 220 255 / 60%);
+  border-radius: 50%;
+  transform: translate(var(--kx, 0px), var(--ky, 0px));
+}
+
+.joystick.active .joystick-knob {
+  background: rgb(247 220 78 / 85%);
+  border-color: rgb(255 245 200 / 85%);
+}
+
+body[data-controls='pad'] .joystick,
+body[data-controls='stick'] .dpad {
+  display: none;
 }
 
 .dpad-key.up {
   top: 0;
-  left: 44px;
+  left: 50px;
 }
 
 .dpad-key.up::before {
@@ -278,7 +368,7 @@ body.touch .stage {
 
 .dpad-key.down {
   bottom: 0;
-  left: 44px;
+  left: 50px;
 }
 
 .dpad-key.down::before {
@@ -286,7 +376,7 @@ body.touch .stage {
 }
 
 .dpad-key.left {
-  top: 44px;
+  top: 50px;
   left: 0;
 }
 
@@ -295,7 +385,7 @@ body.touch .stage {
 }
 
 .dpad-key.right {
-  top: 44px;
+  top: 50px;
   right: 0;
 }
 
@@ -305,10 +395,10 @@ body.touch .stage {
 
 .dpad-hub {
   position: absolute;
-  top: 44px;
-  left: 44px;
-  width: 44px;
-  height: 44px;
+  top: 50px;
+  left: 50px;
+  width: 50px;
+  height: 50px;
   background: rgb(35 35 58 / 45%);
   border-radius: 6px;
 }
@@ -401,25 +491,40 @@ body.touch .tip-touch {
   }
 
   .dpad {
-    width: 114px;
-    height: 114px;
+    width: 126px;
+    height: 126px;
   }
 
   .dpad-key {
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
   }
 
   .dpad-key.up,
   .dpad-key.down,
   .dpad-hub {
-    left: 38px;
+    left: 42px;
   }
 
   .dpad-key.left,
   .dpad-key.right,
   .dpad-hub {
-    top: 38px;
+    top: 42px;
+  }
+
+  .joystick {
+    height: 126px;
+  }
+
+  .joystick-base {
+    width: 108px;
+    height: 108px;
+  }
+
+  .joystick-knob {
+    width: 50px;
+    height: 50px;
+    margin: -25px 0 0 -25px;
   }
 
   .action-key {

@@ -29,15 +29,20 @@ Updates arrive by themselves: the game always starts from its offline copy and f
 
 ### Controls
 
-| Action       | Keyboard           | Touch                         |
-| ------------ | ------------------ | ----------------------------- |
-| Dig and move | Arrow keys or WASD | The pad, or swipe on the cave |
-| Drop a bomb  | Space              | The ● key                     |
-| Pause        | P or Esc           | The ▮▮ button                 |
-| Sound on/off | M                  | The ♫ button                  |
-| Restart cave | R (costs a miner)  | —                             |
+| Action       | Keyboard           | Touch                                       |
+| ------------ | ------------------ | ------------------------------------------- |
+| Dig and move | Arrow keys or WASD | The joystick or d-pad, or swipe on the cave |
+| Drop a bomb  | Space              | The ● key                                   |
+| Pause        | P or Esc           | The ▮▮ button                               |
+| Sound on/off | M                  | The ♫ button                                |
+| Restart cave | R (costs a miner)  | —                                           |
 
-The swipe control is a relative stick: press anywhere on the cave, drag in the direction you want, and the miner keeps going until you let go.
+On a phone there are two on screen controls; pick one with the **Joystick / D-pad** switch on the start and pause screens, and the choice is remembered.
+
+- **Joystick** (the default) floats: put your thumb down anywhere in the bottom left and the stick centers under it, then hold it over to keep walking. If your thumb runs past the edge the stick follows it, so a short pull back is always enough to turn around.
+- **D-pad** responds across its whole square rather than just on the arrows: whichever side of the center your thumb is on is the way you go.
+
+Both hold on to the direction you are going until your thumb clearly moves to another, so a thumb resting near a diagonal does not jitter between two directions. Swiping on the cave itself also steers, in either mode: press anywhere on the cave, drag the way you want, and keep holding.
 
 ## Rules of the cave
 

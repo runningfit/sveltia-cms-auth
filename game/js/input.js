@@ -1,6 +1,6 @@
 /**
- * Input handling for Rockfall: keyboard, an on screen pad, and a relative thumb stick that works
- * anywhere on the playfield.
+ * Input handling for Rockfall: keyboard, an on screen joystick or d-pad, and a relative thumb stick
+ * that works anywhere on the playfield.
  */
 window.Rockfall = window.Rockfall || {};
 
@@ -25,8 +25,58 @@ window.Rockfall = window.Rockfall || {};
     KeyD: 'right',
   };
 
-  /** Distance in CSS pixels the thumb has to travel before the stick registers. */
+  /** Distance in CSS pixels the thumb has to travel before the playfield stick registers. */
   const DEAD_ZONE = 16;
+  /** Thumb travel in CSS pixels before the on screen joystick registers a direction. */
+  const JOYSTICK_DEAD_ZONE = 12;
+  /** How far the joystick knob can move from the center of its base, in CSS pixels. */
+  const JOYSTICK_TRAVEL = 36;
+  /** Radius in CSS pixels of the dead spot in the middle of the d-pad. */
+  const PAD_DEAD_ZONE = 12;
+  /**
+   * How much stronger the other axis must be before a held direction gives way to it. Without
+   * this a thumb resting near a diagonal flickers between two directions on a four way grid.
+   */
+  const HYSTERESIS = 1.35;
+
+  /**
+   * Turn a thumb offset into one of four directions, holding on to the current direction until
+   * the other axis clearly wins.
+   * @param {number} dx - Horizontal offset.
+   * @param {number} dy - Vertical offset.
+   * @param {string|null} current - Direction currently held.
+   * @returns {string} The direction name.
+   */
+  const directionFor = (dx, dy, current) => {
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+    const horizontal = dx > 0 ? 'right' : 'left';
+    const vertical = dy > 0 ? 'down' : 'up';
+
+    if (current === horizontal && ax * HYSTERESIS >= ay) {
+      return horizontal;
+    }
+
+    if (current === vertical && ay * HYSTERESIS >= ax) {
+      return vertical;
+    }
+
+    return ax > ay ? horizontal : vertical;
+  };
+
+  /**
+   * Route a pointer's later events to an element. Capture is a nicety, so a browser that refuses
+   * it must not break the control.
+   * @param {HTMLElement} element - The element to capture to.
+   * @param {number} pointerId - The pointer to capture.
+   */
+  const capture = (element, pointerId) => {
+    try {
+      element.setPointerCapture(pointerId);
+    } catch {
+      // The control still works from events on the element itself.
+    }
+  };
 
   /**
    * Collects held directions from every input device and hands the game a single intent.
@@ -37,21 +87,35 @@ window.Rockfall = window.Rockfall || {};
      * @param {object} options - Element references and callbacks.
      * @param {HTMLElement} options.surface - Element used as the thumb stick area.
      * @param {HTMLElement} options.dpad - Container of the on screen direction keys.
+     * @param {HTMLElement} options.joystick - The on screen joystick area.
      * @param {HTMLElement} options.bombButton - The bomb key.
      * @param {(action: string) => void} options.onAction - Callback for named actions such as
      * pause, mute or start.
      */
-    constructor({ surface, dpad, bombButton, onAction }) {
+    constructor({ surface, dpad, joystick, bombButton, onAction }) {
       this.onAction = onAction;
       this.held = [];
       this.stick = null;
+      this.touchDir = null;
       this.pointerId = null;
       this.bombQueued = false;
+      this.resets = [];
 
       this.bindKeyboard();
       this.bindStick(surface);
       this.bindPad(dpad);
+      this.bindJoystick(joystick);
       this.bindBomb(bombButton);
+    }
+
+    /**
+     * Let go of every touch control, for instance when switching between the pad and the stick.
+     */
+    releaseTouch() {
+      this.touchDir = null;
+      this.stick = null;
+      this.pointerId = null;
+      this.resets.forEach((reset) => reset());
     }
 
     /**
@@ -118,7 +182,7 @@ window.Rockfall = window.Rockfall || {};
 
       window.addEventListener('blur', () => {
         this.held = [];
-        this.stick = null;
+        this.releaseTouch();
       });
     }
 
@@ -139,7 +203,7 @@ window.Rockfall = window.Rockfall || {};
         this.pointerId = event.pointerId;
         this.origin = { x: event.clientX, y: event.clientY };
         this.stick = null;
-        surface.setPointerCapture(event.pointerId);
+        capture(surface, event.pointerId);
         this.onAction('gesture');
       };
 
@@ -162,8 +226,7 @@ window.Rockfall = window.Rockfall || {};
           return;
         }
 
-        this.stick =
-          Math.abs(dx) > Math.abs(dy) ? (dx > 0 && 'right') || 'left' : (dy > 0 && 'down') || 'up';
+        this.stick = directionFor(dx, dy, this.stick);
 
         const pull = distance - DEAD_ZONE * 1.6;
 
@@ -191,48 +254,47 @@ window.Rockfall = window.Rockfall || {};
     }
 
     /**
-     * Wire up the on screen direction keys, including sliding a thumb between them.
+     * Wire up the on screen d-pad. The whole pad is live: the direction comes from which side of
+     * its center the thumb is on, so a thumb that misses the arrow itself still steers.
      * @param {HTMLElement} dpad - Container of the direction keys.
      */
     bindPad(dpad) {
+      const keys = Object.fromEntries(
+        [...dpad.querySelectorAll('[data-dir]')].map((key) => [key.dataset.dir, key]),
+      );
+
       let padPointer = null;
-      let current = null;
 
       /**
-       * Switch the pad to a new direction.
+       * Hold a direction and light its key.
        * @param {string|null} dir - Direction name, or null to release.
        */
       const setDir = (dir) => {
-        if (current === dir) {
-          return;
-        }
-
-        if (current) {
-          this.release(current);
-        }
-
-        current = dir;
-
-        if (dir) {
-          this.press(dir);
-        }
+        this.touchDir = dir;
+        Object.entries(keys).forEach(([name, key]) => key.classList.toggle('active', name === dir));
       };
 
       /**
-       * Work out which key sits under a pointer.
+       * Work out the direction for a pointer from its position against the pad's center.
        * @param {PointerEvent} event - The pointer event.
-       * @returns {string|null} The direction name under the pointer.
+       * @returns {string|null} The direction name, or null in the dead spot.
        */
       const dirAt = (event) => {
-        const element = document.elementFromPoint(event.clientX, event.clientY);
+        const rect = dpad.getBoundingClientRect();
+        const dx = event.clientX - (rect.left + rect.width / 2);
+        const dy = event.clientY - (rect.top + rect.height / 2);
 
-        return (element && element.dataset && element.dataset.dir) || null;
+        if (Math.hypot(dx, dy) < PAD_DEAD_ZONE) {
+          return null;
+        }
+
+        return directionFor(dx, dy, this.touchDir);
       };
 
       dpad.addEventListener('pointerdown', (event) => {
         event.preventDefault();
         padPointer = event.pointerId;
-        dpad.setPointerCapture(event.pointerId);
+        capture(dpad, event.pointerId);
         setDir(dirAt(event));
         this.onAction('gesture');
       });
@@ -251,6 +313,134 @@ window.Rockfall = window.Rockfall || {};
           }
         });
       });
+
+      this.resets.push(() => {
+        padPointer = null;
+        setDir(null);
+      });
+    }
+
+    /**
+     * Wire up the floating thumb joystick. The base jumps to wherever the thumb lands inside the
+     * joystick area, the knob follows the thumb, and the stick's anchor trails along behind a
+     * thumb that overshoots, so reversing never needs a long drag back. The anchor may follow the
+     * thumb right out of the joystick area; only the drawn base is kept inside it.
+     * @param {HTMLElement} zone - The joystick area.
+     */
+    bindJoystick(zone) {
+      const base = zone.querySelector('.joystick-base');
+      const knob = zone.querySelector('.joystick-knob');
+      let stickPointer = null;
+      let origin = null;
+      let bounds = null;
+      let rest = null;
+
+      /**
+       * Place the base and the knob.
+       * @param {number} bx - Base offset from its resting place, horizontally.
+       * @param {number} by - Base offset from its resting place, vertically.
+       * @param {number} kx - Knob offset from the base center, horizontally.
+       * @param {number} ky - Knob offset from the base center, vertically.
+       */
+      const place = (bx, by, kx, ky) => {
+        base.style.setProperty('--bx', `${bx}px`);
+        base.style.setProperty('--by', `${by}px`);
+        knob.style.setProperty('--kx', `${kx}px`);
+        knob.style.setProperty('--ky', `${ky}px`);
+      };
+
+      /**
+       * Keep a point far enough inside the joystick area for the whole base to show.
+       * @param {number} x - Point, in client coordinates.
+       * @param {number} y - Point, in client coordinates.
+       * @returns {object} The nearest point the base center can sit on.
+       */
+      const inside = (x, y) => ({
+        x: Math.min(Math.max(x, bounds.left + rest.radius), bounds.right - rest.radius),
+        y: Math.min(Math.max(y, bounds.top + rest.radius), bounds.bottom - rest.radius),
+      });
+
+      /**
+       * Draw the base at the anchor, as far as the area allows, with the knob toward the thumb.
+       * @param {number} x - Thumb position, in client coordinates.
+       * @param {number} y - Thumb position, in client coordinates.
+       */
+      const draw = (x, y) => {
+        const center = inside(origin.x, origin.y);
+        const kx = x - center.x;
+        const ky = y - center.y;
+        const reach = Math.min(Math.hypot(kx, ky), JOYSTICK_TRAVEL) / (Math.hypot(kx, ky) || 1);
+
+        place(center.x - rest.x, center.y - rest.y, kx * reach, ky * reach);
+      };
+
+      /**
+       * Return the stick to rest.
+       */
+      const reset = () => {
+        stickPointer = null;
+        origin = null;
+        this.touchDir = null;
+        zone.classList.remove('active');
+        place(0, 0, 0, 0);
+      };
+
+      zone.addEventListener('pointerdown', (event) => {
+        if (stickPointer !== null) {
+          return;
+        }
+
+        event.preventDefault();
+        stickPointer = event.pointerId;
+        bounds = zone.getBoundingClientRect();
+
+        const radius = base.offsetWidth / 2;
+
+        rest = {
+          x: bounds.left + base.offsetLeft + radius,
+          y: bounds.top + base.offsetTop + radius,
+          radius,
+        };
+        origin = inside(event.clientX, event.clientY);
+        draw(event.clientX, event.clientY);
+        capture(zone, event.pointerId);
+        zone.classList.add('active');
+        this.onAction('gesture');
+      });
+
+      zone.addEventListener('pointermove', (event) => {
+        if (event.pointerId !== stickPointer) {
+          return;
+        }
+
+        let dx = event.clientX - origin.x;
+        let dy = event.clientY - origin.y;
+        let distance = Math.hypot(dx, dy);
+        const overshoot = distance - JOYSTICK_TRAVEL;
+
+        if (overshoot > 0) {
+          origin = {
+            x: origin.x + (dx / distance) * overshoot,
+            y: origin.y + (dy / distance) * overshoot,
+          };
+          dx = event.clientX - origin.x;
+          dy = event.clientY - origin.y;
+          distance = Math.hypot(dx, dy);
+        }
+
+        draw(event.clientX, event.clientY);
+        this.touchDir = distance < JOYSTICK_DEAD_ZONE ? null : directionFor(dx, dy, this.touchDir);
+      });
+
+      ['pointerup', 'pointercancel'].forEach((type) => {
+        zone.addEventListener(type, (event) => {
+          if (event.pointerId === stickPointer) {
+            reset();
+          }
+        });
+      });
+
+      this.resets.push(reset);
     }
 
     /**
@@ -270,7 +460,7 @@ window.Rockfall = window.Rockfall || {};
      * @returns {object} The step to take and whether a bomb was requested.
      */
     consume() {
-      const dir = this.stick || this.held[this.held.length - 1] || null;
+      const dir = this.touchDir || this.stick || this.held[this.held.length - 1] || null;
       const step = STEPS[dir] || { x: 0, y: 0 };
       const bomb = this.bombQueued;
 
