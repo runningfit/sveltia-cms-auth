@@ -315,7 +315,7 @@
           'and miners alike.',
         keys: [
           'Arrows, WASD or the thumb stick to dig',
-          'Space or ● to drop a bomb',
+          'Space, ● or a double tap drops a bomb',
           'Push rocks sideways to clear a path',
           this.highScore ? `Best score ${pad(this.highScore, 6)}` : '',
         ],
@@ -341,6 +341,7 @@
       this.cave = new Engine.Cave(Levels.levelFor(this.level));
       this.camera = { x: 0, y: 0 };
       this.accumulator = 0;
+      this.controls.discardBomb();
       this.state = 'intro';
       this.introTimer = 2.2;
       this.resize();

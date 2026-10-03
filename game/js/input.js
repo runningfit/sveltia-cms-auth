@@ -27,6 +27,14 @@ window.Rockfall = window.Rockfall || {};
 
   /** Distance in CSS pixels the thumb has to travel before the playfield stick registers. */
   const DEAD_ZONE = 16;
+  /** A touch on the cave shorter than this, in milliseconds, is a tap rather than a swipe. */
+  const TAP_TIME = 250;
+  /** How far in CSS pixels a tap may drift and still count as a tap. */
+  const TAP_SLOP = 12;
+  /** Longest pause in milliseconds between the two taps of a double tap. */
+  const DOUBLE_TAP_GAP = 350;
+  /** Furthest apart in CSS pixels the two taps of a double tap may land. */
+  const DOUBLE_TAP_REACH = 60;
   /** Thumb travel in CSS pixels before the on screen joystick registers a direction. */
   const JOYSTICK_DEAD_ZONE = 12;
   /** How far the joystick knob can move from the center of its base, in CSS pixels. */
@@ -187,10 +195,14 @@ window.Rockfall = window.Rockfall || {};
     }
 
     /**
-     * Turn the playfield into a relative thumb stick.
+     * Turn the playfield into a relative thumb stick, and let a double tap on it drop a bomb. A
+     * tap is a touch that is both short and still, so a swipe never counts as one.
      * @param {HTMLElement} surface - The playfield element.
      */
     bindStick(surface) {
+      let touch = null;
+      let lastTap = null;
+
       /**
        * Anchor the stick where the thumb landed.
        * @param {PointerEvent} event - The pointer event.
@@ -203,8 +215,30 @@ window.Rockfall = window.Rockfall || {};
         this.pointerId = event.pointerId;
         this.origin = { x: event.clientX, y: event.clientY };
         this.stick = null;
+        touch = { time: performance.now(), x: event.clientX, y: event.clientY, drift: 0 };
         capture(surface, event.pointerId);
         this.onAction('gesture');
+      };
+
+      /**
+       * Count a tap, dropping a bomb when it is the second of a quick pair.
+       * @param {number} x - Where the tap landed, horizontally.
+       * @param {number} y - Where the tap landed, vertically.
+       */
+      const tap = (x, y) => {
+        const now = performance.now();
+
+        const paired =
+          lastTap &&
+          now - lastTap.time <= DOUBLE_TAP_GAP &&
+          Math.hypot(x - lastTap.x, y - lastTap.y) <= DOUBLE_TAP_REACH;
+
+        if (paired) {
+          this.bombQueued = true;
+          lastTap = null;
+        } else {
+          lastTap = { time: now, x, y };
+        }
       };
 
       /**
@@ -215,6 +249,11 @@ window.Rockfall = window.Rockfall || {};
         if (event.pointerId !== this.pointerId) {
           return;
         }
+
+        touch.drift = Math.max(
+          touch.drift,
+          Math.hypot(event.clientX - touch.x, event.clientY - touch.y),
+        );
 
         const dx = event.clientX - this.origin.x;
         const dy = event.clientY - this.origin.y;
@@ -237,14 +276,25 @@ window.Rockfall = window.Rockfall || {};
       };
 
       /**
-       * Let go of the stick.
+       * Let go of the stick, and count the touch as a tap if it was short and still.
        * @param {PointerEvent} event - The pointer event.
        */
       const end = (event) => {
-        if (event.pointerId === this.pointerId) {
-          this.pointerId = null;
-          this.stick = null;
+        if (event.pointerId !== this.pointerId) {
+          return;
         }
+
+        this.pointerId = null;
+        this.stick = null;
+
+        const still = touch && touch.drift <= TAP_SLOP;
+        const quick = touch && performance.now() - touch.time <= TAP_TIME;
+
+        if (event.type === 'pointerup' && still && quick) {
+          tap(event.clientX, event.clientY);
+        }
+
+        touch = null;
       };
 
       surface.addEventListener('pointerdown', start);
@@ -453,6 +503,14 @@ window.Rockfall = window.Rockfall || {};
         this.bombQueued = true;
         this.onAction('gesture');
       });
+    }
+
+    /**
+     * Forget a bomb asked for while it could not be dropped, so it does not go off later at a
+     * bad moment, such as the start of the next life.
+     */
+    discardBomb() {
+      this.bombQueued = false;
     }
 
     /**
