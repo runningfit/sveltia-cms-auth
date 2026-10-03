@@ -25,7 +25,7 @@ The game installs to the home screen and runs full screen, and once it has been 
 - **Android (Chrome):** tap the ⤓ button in the status bar, or Chrome's menu → _Add to home screen_.
 - **iPhone (Safari):** tap Share → _Add to Home Screen_. Safari has no install prompt, so the ⤓ button does not appear there.
 
-Updates arrive by themselves: the game always starts from its offline copy and fetches any new version in the background, so a new release is picked up the first time the game is opened after it goes live and shows from the launch after that.
+Updates arrive by themselves and all at once. Every deploy stamps the release into `sw.js`, so the phone notices a new version, downloads the whole release in the background, and only switches to it once it has every file; it never runs a mix of two releases. If the game is on its start or game over screen when the download finishes it reloads into the new release straight away; mid-game it carries on, and the new release is there the next time the game is opened.
 
 ### Controls
 
@@ -79,7 +79,7 @@ Caves A and B are hand drawn to teach digging and rock pushing. Everything after
 
 There is no bundler on purpose: the scripts are plain classic scripts sharing a `window.Rockfall` namespace, so the game also runs straight off the filesystem (without offline support, which needs a web server).
 
-If you add a file the game loads, add it to the `SHELL` list in `sw.js` too; `pwa.test.cjs` fails until you do, because a single missing file stops the offline copy from installing.
+If you add a file the game loads, add it to the `SHELL` list in `sw.js` too; `pwa.test.cjs` fails until you do, because a single missing file stops the offline copy from installing. Leave the `const VERSION = 'dev';` line in `sw.js` exactly as it is: the deploy rewrites it to name each release.
 
 ## Tests
 

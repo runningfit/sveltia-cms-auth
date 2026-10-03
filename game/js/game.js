@@ -771,8 +771,36 @@
   // The service worker makes the game playable offline and installable. Pages opened straight
   // from disk cannot register one, and the game runs fine without it.
   if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+    const { serviceWorker } = navigator;
+    const updating = Boolean(serviceWorker.controller);
+    let reloaded = false;
+
+    // A new release has been fully downloaded and taken over. Switch to it straight away if that
+    // loses nothing (no game in progress, or the game failed to start); otherwise this page keeps
+    // running as it is and the new release is there the next time the game is opened.
+    serviceWorker.addEventListener('controllerchange', () => {
+      const { game } = NS;
+      const idle = !game || ['title', 'gameOver'].includes(game.state);
+
+      if (updating && idle && !reloaded) {
+        reloaded = true;
+        window.location.reload();
+      }
+    });
+
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      serviceWorker
+        .register('sw.js')
+        .then((registration) => {
+          // An installed game is often resumed rather than relaunched, which does not check for
+          // updates by itself, so check whenever it comes back to the foreground.
+          document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+              registration.update().catch(() => {});
+            }
+          });
+        })
+        .catch(() => {});
     });
   }
 })(window.Rockfall);
