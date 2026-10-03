@@ -28,6 +28,7 @@ const SHELL = [
   'js/levels.js',
   'js/engine.js',
   'js/input.js',
+  'js/fx.js',
   'js/game.js',
   'icons/icon-192.png',
   'icons/icon-512.png',

@@ -98,6 +98,8 @@ window.Rockfall = window.Rockfall || {};
       this.won = false;
       this.deathDelay = 0;
       this.events = [];
+      // Cells the player dug or took a gem from this tick, for the cutter animation.
+      this.cuts = [];
       this.moves = new Map();
       this.playerX = 1;
       this.playerY = 1;
@@ -283,8 +285,10 @@ window.Rockfall = window.Rockfall || {};
       } else if (target === TILE.DIRT) {
         allowed = true;
         this.emit('dig');
+        this.cuts.push({ kind: 'dirt', x: nx, y: ny, dx, dy });
       } else if (target === TILE.GEM) {
         allowed = true;
+        this.cuts.push({ kind: 'gem', x: nx, y: ny, dx, dy });
         this.gems += 1;
         this.score += this.gems > this.gemsNeeded ? this.gemValue * 2 : this.gemValue;
         this.emit('gem');
@@ -518,6 +522,7 @@ window.Rockfall = window.Rockfall || {};
      */
     tick(intent, seconds) {
       this.events.length = 0;
+      this.cuts.length = 0;
       this.moves.clear();
       this.ticks += 1;
 
