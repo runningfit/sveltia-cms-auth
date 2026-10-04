@@ -74,11 +74,35 @@
       <main class="stage" id="stage">
         <canvas id="screen" width="640" height="400"></canvas>
 
+        <div class="toast" id="toast" role="status" hidden></div>
+
         <div class="overlay" id="overlay" hidden>
           <div class="panel" id="panel">
             <h1 class="panel-title" id="panel-title">ROCKFALL</h1>
             <p class="panel-text" id="panel-text"></p>
             <div class="panel-keys" id="panel-keys"></div>
+            <div class="music-row" role="group" aria-label="Music">
+              <button
+                type="button"
+                class="music-step"
+                id="music-prev"
+                aria-label="Previous music setting"
+              >
+                &#9664;
+              </button>
+              <div class="music-label" aria-live="polite">
+                <span class="music-mode" id="music-mode">Shuffle</span>
+                <span class="music-now" id="music-now"></span>
+              </div>
+              <button
+                type="button"
+                class="music-step"
+                id="music-next"
+                aria-label="Next music setting"
+              >
+                &#9654;
+              </button>
+            </div>
             <div
               class="segmented"
               id="panel-controls"
@@ -132,6 +156,7 @@
     <script src="js/art.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/music.js"></script>
+    <script src="js/jukebox.js"></script>
     <script src="js/levels.js"></script>
     <script src="js/engine.js"></script>
     <script src="js/input.js"></script>

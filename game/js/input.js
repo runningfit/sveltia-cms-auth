@@ -170,6 +170,7 @@ window.Rockfall = window.Rockfall || {};
           Escape: 'pause',
           KeyR: 'restart',
           KeyM: 'mute',
+          KeyN: 'music',
           Enter: 'confirm',
           NumpadEnter: 'confirm',
         };
