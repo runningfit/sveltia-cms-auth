@@ -34,6 +34,7 @@ jobs:
           node game/tests/rules.test.cjs
           node game/tests/caves.test.cjs
           node game/tests/pwa.test.cjs
+          node game/tests/music.test.cjs
 
       - name: Stage the site
         # Ship the playable game only, without its tests, notes or the sprite preview page.

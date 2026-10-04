@@ -35,6 +35,7 @@ Updates arrive by themselves and all at once. Every deploy stamps the release in
 | Drop a bomb  | Space              | The ● key, or double tap the cave           |
 | Pause        | P or Esc           | The ▮▮ button                               |
 | Sound on/off | M                  | The ♫ button                                |
+| Change music | N                  | ◂ ▸ on the start and pause screens          |
 | Restart cave | R (costs a miner)  | —                                           |
 
 On a phone there are two on screen controls; pick one with the **Joystick / D-pad** switch on the start and pause screens, and the choice is remembered.
@@ -43,6 +44,16 @@ On a phone there are two on screen controls; pick one with the **Joystick / D-pa
 - **D-pad** responds across its whole square rather than just on the arrows: whichever side of the center your thumb is on is the way you go.
 
 Both hold on to the direction you are going until your thumb clearly moves to another, so a thumb resting near a diagonal does not jitter between two directions. Swiping on the cave itself also steers, in either mode: press anywhere on the cave, drag the way you want, and keep holding. A quick double tap on the cave drops a bomb; a swipe never counts as a tap, so steering will not set one off by accident.
+
+### Music
+
+Three tunes play in the background, each written for the game and built note by note in the browser, so they cost a few kilobytes and work offline:
+
+- **Deep Seam**: a chill dig groove with a plucked bass and a shovel crunch on the off-beats.
+- **Crystal Cavern**: dreamy bell arpeggios over soft pads.
+- **Rockslide Shuffle**: a bouncy, swung tune with a funky bass and a whistled melody.
+
+By default the music shuffles, with a different tune for each new cave (retrying a cave keeps the tune). The ◂ ▸ arrows on the start and pause screens, or N on a keyboard, step through Shuffle, each tune, and Music off; the choice is remembered. The ♫ button mutes the music along with the sound effects, and the music stops while the game is in the background.
 
 ## Rules of the cave
 
@@ -70,6 +81,8 @@ Caves A and B are hand drawn to teach digging and rock pushing. Everything after
 | `css/style.css`        | Cabinet styling, responsive layout, the on screen pad             |
 | `js/art.js`            | The palette and every sprite, drawn on a 16×16 pixel grid in code |
 | `js/audio.js`          | Web Audio sound effects, generated at runtime                     |
+| `js/music.js`          | The music: a small sequencer, synth voices and the three songs    |
+| `js/jukebox.js`        | Decides what plays: shuffle, a chosen tune, or off                |
 | `js/levels.js`         | The hand drawn caves and the seeded cave generator                |
 | `js/engine.js`         | The cave simulation: gravity, creatures, bombs, explosions        |
 | `js/input.js`          | Keyboard, the on screen pad and the thumb stick                   |
@@ -87,6 +100,7 @@ If you add a file the game loads, add it to the `SHELL` list in `sw.js` too; `pw
 node game/tests/rules.test.cjs   # gravity, digging, pushing, bombs, deaths
 node game/tests/caves.test.cjs   # every cave has a reachable quota and exit, plus a bot play through
 node game/tests/pwa.test.cjs     # the offline cache, the page and the manifest agree with the files
+node game/tests/music.test.cjs   # every song is well formed, and the jukebox shuffles and steps correctly
 ```
 
-All three are plain Node scripts that load the game modules into a sandbox with a stub `window`, so they need nothing installed.
+All four are plain Node scripts that load the game modules into a sandbox with a stub `window`, so they need nothing installed.

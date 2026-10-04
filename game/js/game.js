@@ -6,7 +6,7 @@
  * @param {object} NS - The Rockfall namespace holding the other modules.
  */
 (function initGame(NS) {
-  const { Art, Engine, Fx, Levels, Sfx, Controls } = NS;
+  const { Art, Engine, Fx, Jukebox, Levels, Music, Sfx, Controls } = NS;
   const { TILE, FLAG, BOOM_STAGES } = Engine;
   /** Length of one logic tick in seconds. */
   const TICK = 0.125;
@@ -97,6 +97,18 @@
       this.art = new Art.SpriteSheet();
       this.fx = new Fx.CutterFx(TICK);
       this.sfx = new Sfx();
+      this.musicMode = document.getElementById('music-mode');
+      this.musicNow = document.getElementById('music-now');
+      this.toast = document.getElementById('toast');
+      this.musicAttached = false;
+      this.tuneLevel = null;
+      this.jukebox = new Jukebox.Jukebox({
+        player: new Music.MusicPlayer(),
+        mode: loadSetting('rockfall.music') || 'shuffle',
+        onSong: this.announce.bind(this),
+        onChange: this.updateMusicRow.bind(this),
+      });
+      this.jukebox.player.setVolume(1);
       this.controlPicker = document.getElementById('panel-controls');
       this.controls = new Controls({
         surface: this.canvas,
@@ -133,11 +145,19 @@
         if (document.hidden && this.state === 'playing') {
           this.action('pause');
         }
+
+        // Hidden pages get their timers slowed, which would make the music stumble.
+        if (document.hidden) {
+          this.jukebox.suspend();
+        } else {
+          this.jukebox.resume();
+        }
       });
 
       this.cave = new Engine.Cave(Levels.levelFor(this.level));
       this.resize();
       this.centerCamera();
+      this.updateMusicRow();
       this.showTitle();
       window.requestAnimationFrame((time) => this.frame(time));
     }
@@ -149,15 +169,75 @@
       document.getElementById('btn-pause').addEventListener('click', () => this.action('pause'));
       document.getElementById('btn-sound').addEventListener('click', () => this.action('mute'));
       this.panelButton.addEventListener('click', () => {
-        this.sfx.unlock();
+        this.unlockAudio();
         this.action('confirm');
       });
+      document.getElementById('music-prev').addEventListener('click', () => this.stepMusic(-1));
+      document.getElementById('music-next').addEventListener('click', () => this.stepMusic(1));
       this.controlPicker.querySelectorAll('[data-mode]').forEach((choice) => {
         choice.addEventListener('click', () => {
           this.setTouchMode(choice.dataset.mode);
           saveSetting('rockfall.controls', choice.dataset.mode);
         });
       });
+    }
+
+    /**
+     * Allow sound now that the player has touched or clicked something, and start the music.
+     * @param {boolean} [play] - Whether to start the music if it is not already playing.
+     */
+    unlockAudio(play = true) {
+      this.sfx.unlock();
+
+      if (!this.sfx.ctx) {
+        return;
+      }
+
+      if (!this.musicAttached) {
+        this.jukebox.player.attach(this.sfx.ctx, this.sfx.musicOut);
+        this.musicAttached = true;
+      }
+
+      if (play) {
+        this.jukebox.start();
+      } else {
+        this.jukebox.enable();
+      }
+    }
+
+    /**
+     * Step through the music settings: shuffle, each tune, then off.
+     * @param {number} direction - 1 for the next setting, -1 for the previous one.
+     */
+    stepMusic(direction) {
+      this.unlockAudio(false);
+      saveSetting('rockfall.music', this.jukebox.step(direction));
+    }
+
+    /**
+     * Show the music setting and, in shuffle, what is playing.
+     */
+    updateMusicRow() {
+      const { mode, now } = this.jukebox.label();
+
+      this.musicMode.textContent = mode;
+      this.musicNow.textContent = now ? `now playing ${now}` : '';
+    }
+
+    /**
+     * Show a new tune's name over the cave for a moment.
+     * @param {object} song - The tune that started.
+     */
+    announce(song) {
+      this.toast.textContent = `♪ ${song.title}`;
+      this.toast.hidden = false;
+      this.toast.classList.remove('show');
+      // Restart the fade even when one tune follows another quickly.
+      window.requestAnimationFrame(() => this.toast.classList.add('show'));
+      window.clearTimeout(this.toastTimer);
+      this.toastTimer = window.setTimeout(() => {
+        this.toast.hidden = true;
+      }, 2800);
     }
 
     /**
@@ -238,14 +318,20 @@
      */
     action(action) {
       if (action === 'gesture') {
-        this.sfx.unlock();
+        this.unlockAudio();
         this.enableTouch();
 
         return;
       }
 
+      if (action === 'music') {
+        this.stepMusic(1);
+
+        return;
+      }
+
       if (action === 'mute') {
-        this.sfx.unlock();
+        this.unlockAudio();
 
         const muted = this.sfx.toggleMute();
 
@@ -277,7 +363,7 @@
      * Act on the panel button or the enter key, depending on the current state.
      */
     confirm() {
-      this.sfx.unlock();
+      this.unlockAudio();
 
       switch (this.state) {
         case 'title':
@@ -307,7 +393,7 @@
         this.showPanel({
           title: 'PAUSED',
           text: `Cave ${Levels.caveLabel(this.level)} — ${this.cave.name}`,
-          keys: ['P or Esc to resume', 'R restarts the cave', 'M toggles sound'],
+          keys: ['P or Esc to resume', 'R restarts the cave', 'M toggles sound, N changes music'],
           button: 'RESUME',
         });
       } else if (this.state === 'paused') {
@@ -354,6 +440,13 @@
     loadCave() {
       this.cave = new Engine.Cave(Levels.levelFor(this.level));
       this.fx.clear();
+
+      // Shuffle moves on to another tune for each new cave, but not when retrying one.
+      if (this.level !== this.tuneLevel) {
+        this.tuneLevel = this.level;
+        this.jukebox.newCave();
+      }
+
       this.camera = { x: 0, y: 0 };
       this.accumulator = 0;
       this.controls.discardBomb();

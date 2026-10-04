@@ -7,6 +7,11 @@
 window.Rockfall = window.Rockfall || {};
 
 (function initAudio(NS) {
+  /** Level of the sound effects. */
+  const EFFECTS_LEVEL = 0.4;
+  /** Level of the music channel. The songs are mixed loud, so this keeps them under the effects. */
+  const MUSIC_LEVEL = 0.26;
+
   /**
    * A bank of short procedural sound effects.
    */
@@ -18,6 +23,7 @@ window.Rockfall = window.Rockfall || {};
       this.ctx = null;
       this.master = null;
       this.muted = false;
+      this.musicOut = null;
       this.noiseBuffer = null;
     }
 
@@ -34,8 +40,12 @@ window.Rockfall = window.Rockfall || {};
       if (!this.ctx) {
         this.ctx = new Ctor();
         this.master = this.ctx.createGain();
-        this.master.gain.value = 0.28;
+        this.master.gain.value = this.muted ? 0 : EFFECTS_LEVEL;
         this.master.connect(this.ctx.destination);
+        // The music has its own channel, set under the effects so digging still cuts through.
+        this.musicOut = this.ctx.createGain();
+        this.musicOut.gain.value = this.muted ? 0 : MUSIC_LEVEL;
+        this.musicOut.connect(this.ctx.destination);
         this.noiseBuffer = this.createNoise();
       }
 
@@ -68,7 +78,8 @@ window.Rockfall = window.Rockfall || {};
       this.muted = !this.muted;
 
       if (this.master) {
-        this.master.gain.value = this.muted ? 0 : 0.28;
+        this.master.gain.value = this.muted ? 0 : EFFECTS_LEVEL;
+        this.musicOut.gain.value = this.muted ? 0 : MUSIC_LEVEL;
       }
 
       return this.muted;
