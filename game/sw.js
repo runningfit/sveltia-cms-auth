@@ -25,6 +25,7 @@ const SHELL = [
   'css/style.css',
   'js/art.js',
   'js/audio.js',
+  'js/music.js',
   'js/levels.js',
   'js/engine.js',
   'js/input.js',
