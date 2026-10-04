@@ -93,6 +93,8 @@ window.Rockfall = window.Rockfall || {};
       this.score = 0;
       this.ticks = 0;
       this.facing = 1;
+      // -1 when he last tried to move up, 1 down, 0 sideways; the arm aims the same way.
+      this.aim = 0;
       this.exitOpen = false;
       this.alive = true;
       this.won = false;
@@ -274,6 +276,8 @@ window.Rockfall = window.Rockfall || {};
       if (dx !== 0) {
         this.facing = dx;
       }
+
+      this.aim = dy;
 
       const nx = this.playerX + dx;
       const ny = this.playerY + dy;
