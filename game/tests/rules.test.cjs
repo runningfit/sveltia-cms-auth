@@ -109,6 +109,23 @@ check(
   JSON.stringify(cutTest.cuts),
 );
 
+// --- The arm aims the way he last tried to move vertically ------------------
+const aimTest = new Engine.Cave({
+  name: 'T',
+  gemsNeeded: 1,
+  time: 100,
+  map: ['WWWWW', 'W...W', 'W.P.W', 'W...W', 'WWWWW'],
+});
+check('he starts with his arm at his side', aimTest.aim === 0);
+aimTest.tick({ dx: 0, dy: -1, bomb: false }, TICK);
+check('moving up aims the arm up', aimTest.aim === -1);
+aimTest.tick({ dx: 0, dy: 0, bomb: false }, TICK);
+check('standing still keeps the aim', aimTest.aim === -1);
+aimTest.tick({ dx: 0, dy: 1, bomb: false }, TICK);
+check('moving down aims the arm down', aimTest.aim === 1);
+aimTest.tick({ dx: 1, dy: 0, bomb: false }, TICK);
+check('moving sideways lowers the arm', aimTest.aim === 0);
+
 // --- Pushing ---------------------------------------------------------------
 const pushTest = new Engine.Cave({
   name: 'T',

@@ -500,12 +500,72 @@ window.Rockfall = window.Rockfall || {};
     return grid;
   };
 
+  /** Where his arm hangs in the frames above, below the shoulder at column 10, row 8. */
+  const ARM_AT_SIDE = [
+    [10, 9],
+    [10, 10],
+    [10, 11],
+  ];
+
   /**
-   * Pick a spaceman frame.
+   * Arm poses for cutting up and down: the arm pixels as column, row and color, ending in the
+   * glove and the cutter's yellow tip, which is where the laser comes from.
+   */
+  const AIM = {
+    up: [
+      [10, 7, 'f'],
+      [11, 6, 'f'],
+      [12, 5, 'f'],
+      [12, 4, '7'],
+      [13, 4, '7'],
+      [13, 3, 'h'],
+    ],
+    down: [
+      [10, 9, 'f'],
+      [11, 10, 'f'],
+      [12, 11, 'f'],
+      [12, 12, '7'],
+      [12, 13, 'h'],
+    ],
+  };
+
+  /**
+   * Repose a spaceman frame with his arm aimed up or down.
+   * @param {string[][]} grid - A spaceman frame, arm at his side.
+   * @param {string} pose - `up` or `down`.
+   * @returns {string[][]} A new frame with the arm moved.
+   */
+  const aimed = (grid, pose) => {
+    const copy = grid.map((row) => row.slice());
+
+    ARM_AT_SIDE.forEach(([x, y]) => {
+      copy[y][x] = '.';
+    });
+    AIM[pose].forEach(([x, y, color]) => {
+      copy[y][x] = color;
+    });
+
+    return copy;
+  };
+
+  /**
+   * Pick a spaceman frame, arm at his side.
    * @param {number} frame - Animation frame.
    * @returns {string[][]} The pixel grid.
    */
   const spacemanGrid = (frame) => SPACEMAN[frame];
+  /**
+   * Pick a spaceman frame with his arm aimed up, for cutting upward.
+   * @param {number} frame - Animation frame.
+   * @returns {string[][]} The pixel grid.
+   */
+  const spacemanUpGrid = (frame) => aimed(SPACEMAN[frame], 'up');
+  /**
+   * Pick a spaceman frame with his arm aimed down, for cutting downward.
+   * @param {number} frame - Animation frame.
+   * @returns {string[][]} The pixel grid.
+   */
+  const spacemanDownGrid = (frame) => aimed(SPACEMAN[frame], 'down');
   /**
    * Paint a bomb waiting to be picked up.
    * @param {number} frame - Animation frame.
@@ -547,6 +607,8 @@ window.Rockfall = window.Rockfall || {};
     boulder: { frames: 1, paint: boulderGrid },
     gem: { frames: 4, paint: gemGrid },
     player: { frames: 3, paint: spacemanGrid },
+    playerUp: { frames: 3, paint: spacemanUpGrid },
+    playerDown: { frames: 3, paint: spacemanDownGrid },
     monster: { frames: 2, paint: monsterGrid },
     pulsator: { frames: 2, paint: pulsatorGrid },
     bomb: { frames: 2, paint: bombIdleGrid },

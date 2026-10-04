@@ -14,6 +14,19 @@
   const TIME_BONUS = 5;
   /** Score needed for each extra miner. */
   const EXTRA_LIFE = 5000;
+  /** The spaceman's sprite for each way his arm can aim: up, sideways and down. */
+  const AIMED = { '-1': 'playerUp', 0: 'player', 1: 'playerDown' };
+
+  /**
+   * Where the cutter's tip is in each pose, as a fraction of his cell, when facing right; the
+   * game mirrors it when he faces left. Matches the yellow tip pixel in each sprite.
+   */
+  const CUTTER_TIP = {
+    '-1': { x: 13.5 / 16, y: 3.5 / 16 },
+    0: { x: 0.8, y: 0.6 },
+    1: { x: 12.5 / 16, y: 13.5 / 16 },
+  };
+
   /** Smallest comfortable viewport, in cave cells, used to pick the zoom level. */
   const MIN_COLS = 11;
   /** Smallest comfortable viewport height, in cave cells. */
@@ -663,7 +676,11 @@
         case TILE.BOOM:
           return { name: 'boom', frame: BOOM_STAGES - cave.aux[index] };
         case TILE.PLAYER:
-          return { name: 'player', frame: cave.moves.has(index) ? 1 + (cave.ticks % 2) : 0 };
+          return {
+            name: AIMED[cave.aim],
+            frame: cave.moves.has(index) ? 1 + (cave.ticks % 2) : 0,
+            player: true,
+          };
         default:
           return null;
       }
@@ -718,11 +735,11 @@
             const py = Math.round(originY + (y + (move ? move.dy * slide : 0)) * tileSize);
             const bitmap = this.art.get(sprite.name, sprite.frame);
 
-            if (sprite.name === 'player') {
+            if (sprite.player) {
               playerAt = { x: (px - originX) / tileSize, y: (py - originY) / tileSize };
             }
 
-            if (sprite.name === 'player' && cave.facing < 0) {
+            if (sprite.player && cave.facing < 0) {
               ctx.save();
               ctx.translate(px + tileSize, py);
               ctx.scale(-1, 1);
@@ -735,9 +752,13 @@
         }
       }
 
-      // The cutter sits at his chest on the side he faces, which is where the beam starts and
-      // where the cut material is pulled in.
-      const nozzle = { x: playerAt.x + 0.5 + 0.3 * cave.facing, y: playerAt.y + 0.6 };
+      // The laser starts at the cutter's tip, and the cut material is pulled in there.
+      const tip = CUTTER_TIP[cave.aim];
+
+      const nozzle = {
+        x: playerAt.x + (cave.facing < 0 ? 1 - tip.x : tip.x),
+        y: playerAt.y + tip.y,
+      };
 
       this.fx.update(this.state === 'playing' ? dt : 0, nozzle);
       this.fx.drawOver(ctx, { originX, originY, tileSize }, nozzle);
