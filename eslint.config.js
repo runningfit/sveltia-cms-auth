@@ -126,12 +126,4 @@ export default [
       ],
     },
   },
-  // The Rockfall game keeps its cell state in bit flags and seeds its caves with an integer
-  // hash, both of which need bitwise operators.
-  {
-    files: ['game/**/*.js'],
-    rules: {
-      'no-bitwise': 'off',
-    },
-  },
 ];

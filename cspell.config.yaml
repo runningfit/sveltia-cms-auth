@@ -15,25 +15,16 @@ useGitignore: true
 ignorePaths:
   - pnpm-lock.yaml
 words:
-  - appinstalled
-  - Archimedes
-  - beforeinstallprompt
   - cooldown
   - CVEs
   - Decap
   - esbuild
-  - Eterna
   - GHSA
   - Ghsas
-  - headlessly
   - hostnames
   - jsdoc
   - kyoshino
   - PKCE
-  - playfield
-  - pulsator
-  - pulsators
-  - Rockslide
   - Rockfall
   - singleline
   - Sveltia
@@ -41,8 +32,3 @@ words:
   - unrs
   - WASD
   - workerd
-overrides:
-  # The pixel art grids in the game are strings of palette keys, not words.
-  - filename: "game/js/art.js"
-    ignoreRegExpList:
-      - "'[.0-9a-k]{16}'"

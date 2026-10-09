@@ -1,6 +1,8 @@
-# Publishes the Rockfall game in game/ to GitHub Pages. Only the game is deployed; the auth
-# worker in src/ is deployed separately by Cloudflare and is not affected by this workflow.
-name: Deploy Rockfall to GitHub Pages
+# Publishes the forwarding page in game/ to GitHub Pages. The game itself moved to
+# runningfit/diamond-grab as Diamond Grab; this keeps the old address sending players there and
+# retires the offline copy that phones installed from it. The auth worker in src/ is deployed
+# separately by Cloudflare and is not affected by this workflow.
+name: Deploy the Diamond Grab forwarding page
 
 on:
   push:
@@ -29,29 +31,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Test the game
-        run: |
-          node game/tests/rules.test.cjs
-          node game/tests/caves.test.cjs
-          node game/tests/pwa.test.cjs
-          node game/tests/music.test.cjs
-
-      - name: Stage the site
-        # Ship the playable game only, without its tests, notes or the sprite preview page.
-        run: |
-          mkdir _site
-          cp -r game/. _site/
-          rm -rf _site/tests _site/README.md _site/sprites.html
-          # Stamp the release into the service worker so phones see a new version and fetch the
-          # whole release at once. Fail the deploy if the stamp did not land.
-          sed -i "s/^const VERSION = 'dev';$/const VERSION = '${GITHUB_SHA}';/" _site/sw.js
-          grep -q "^const VERSION = '${GITHUB_SHA}';$" _site/sw.js
-
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: game
 
       - id: deployment
         uses: actions/deploy-pages@v4
